@@ -66,6 +66,7 @@ class Sift
       @api_key = SiteSetting.sift_api_key
       @api_url = SiteSetting.sift_api_url
       @end_point = SiteSetting.sift_end_point
+      @post_action_end_point = SiteSetting.sift_action_end_point
 
     end
 
@@ -110,6 +111,24 @@ class Sift
       #Rails.logger.error("sift_debug: Before validate...")
 
       validate_classification(sift_response)
+
+    end
+
+    def submit_for_post_action(reviewable, reason)
+
+      Rails.logger.debug("sift_debug: submit_for_post_action Enter")
+
+      Rails.logger.debug("sift_debug: submit_for_post_action: self='#{reviewable.inspect}', reason='#{reason}'")
+
+      the_post = reviewable.target
+
+
+      payload = {
+        'text' => "#{the_post.raw.strip[0..30999]}",
+        'reason' => reason
+      }
+
+      response = post(@post_action_end_point, payload)
 
     end
 
@@ -179,7 +198,7 @@ class Sift
     def post(url_path, payload)
       # send a request to a sift path
 
-      #Rails.logger.debug("sift_debug: post: payload = #{payload.inspect}")
+      Rails.logger.debug("sift_debug: post: payload = #{payload.inspect}")
 
       # Account for a '/' or not at start of endpoint
       if !url_path.start_with? '/'

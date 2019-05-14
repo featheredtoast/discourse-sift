@@ -37,7 +37,11 @@ class ReviewableSiftPost < Reviewable
     PostDestroyer.new(performed_by, post).recover if post.deleted_at
 
     log_confirmation(performed_by, 'sift_confirmed_passed')
-    successful_transition :rejected, :disagreed
+    result = successful_transition :rejected, :disagreed
+
+    report_to_action_queue('agree')
+
+    return result
   end
 
   def perform_ignore(performed_by, _args)
@@ -66,4 +70,18 @@ class ReviewableSiftPost < Reviewable
       post_id: post.id, topic_id: post.topic_id
     )
   end
+
+  def report_to_action_queue(reason)
+    # Only call Sift if the setting is set
+    # TODO: should there also be a boolean toggle or is this suffcient?
+
+    Rails.logger.debug("sift_debug: report_to_action_queue Enter: reason='#{reason}'")
+
+    if !SiteSetting.sift_action_end_point.blank?
+      DiscourseSift.with_client do |client|
+        result = client.submit_for_post_action(self, reason)
+      end
+    end
+  end
+
 end
