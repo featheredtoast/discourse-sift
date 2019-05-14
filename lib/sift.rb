@@ -61,15 +61,16 @@ class Sift
 
   class Client
 
-    def initialize(base_url:, api_key:, api_url:, end_point:)
-      @base_url = base_url
-        @api_key = api_key
-        @api_url = api_url
-        @end_point = end_point
+    def initialize()
+      @base_url = Discourse.base_url
+      @api_key = SiteSetting.sift_api_key
+      @api_url = SiteSetting.sift_api_url
+      @end_point = SiteSetting.sift_end_point
+
     end
 
-    def self.with_client(base_url:, api_key:, api_url:, end_point:)
-      client = self.new(base_url: base_url, api_key: api_key, api_url: api_url,  end_point: end_point)
+    def self.with_client()
+      client = self.new
       yield client if block_given?
     end
 
