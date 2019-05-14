@@ -76,7 +76,7 @@ class Sift
 
     def submit_for_classification(to_classify)
       #Rails.logger.error("sift_debug: submit_for_classification Enter")
-      response = post(@end_point, to_classify)
+      response = post_classification(@end_point, to_classify)
 
       #Rails.logger.error("sift_debug: #{response.inspect}")
       if response.nil? || response.status != 200
@@ -102,10 +102,10 @@ class Sift
 
       sift_response = JSON.parse(response.body)
 
-      #Rails.logger.error("sift_debug: Before response custom fields save #{to_classify.custom_fields.inspect}")
+      #Rails.logger.error("sift_debug: Before response custom fields save #{payload.custom_fields.inspect}")
       to_classify.custom_fields[DiscourseSift::RESPONSE_CUSTOM_FIELD] = sift_response
       to_classify.save_custom_fields(true)
-      #Rails.logger.error("sift_debug: After response custom fields save #{to_classify.custom_fields.inspect}")
+      #Rails.logger.error("sift_debug: After response custom fields save #{payload.custom_fields.inspect}")
 
       #Rails.logger.error("sift_debug: Before validate...")
 
@@ -132,7 +132,7 @@ class Sift
       )
     end
 
-    def post(target, to_classify)
+    def post_classification(target, to_classify)
       # Assume topic_id and player_id are no more than 1000 chars
       # Send a maximum of 31000 chars which is the default for
       # maximum post length site settings.
@@ -149,15 +149,9 @@ class Sift
         request_text = "#{to_classify.topic.title} #{request_text}"
       end
 
-      #Rails.logger.debug("sift_debug: to_classify = #{to_classify.inspect}")
+      #Rails.logger.debug("sift_debug: payload = #{payload.inspect}")
 
-      # Account for a '/' or not at start of endpoint
-      if !target.start_with? '/'
-        target = "/#{target}"
-      end
-
-      request_url = "#{@api_url}#{target}"
-      request_body = {
+      payload = {
         'category' => "#{to_classify.topic&.category&.id}",
         'subcategory' => "#{to_classify.topic&.id}",
         'user_id' => "#{to_classify.user.id}",
@@ -169,16 +163,38 @@ class Sift
       # If the site is configured with a fixed language code
       # then include that in request
       if !SiteSetting.sift_language_code.blank?
-        request_body['language'] = SiteSetting.sift_language_code
+        payload['language'] = SiteSetting.sift_language_code
 
       end
 
-      request_body = request_body.to_json
-      Rails.logger.debug("sift_debug: request_body = #{request_body.inspect}")
+      Rails.logger.debug("sift_debug: post_classification: payload = #{payload.inspect}")
 
       # TODO: Need to handle errors (e.g. incorrect API key)
 
-      #Rails.logger.debug("sift_debug: request_body = #{request_body.inspect}")
+      # Call Sift
+      post(target, payload)
+
+    end
+
+    def post(url_path, payload)
+      # send a request to a sift path
+
+      #Rails.logger.debug("sift_debug: post: payload = #{payload.inspect}")
+
+      # Account for a '/' or not at start of endpoint
+      if !url_path.start_with? '/'
+        url_path = "/#{url_path}"
+      end
+
+      request_url = "#{@api_url}#{url_path}"
+      request_body = payload
+
+      request_body = request_body.to_json
+      Rails.logger.debug("sift_debug: post: request_body = #{request_body.inspect}")
+
+      # TODO: Need to handle errors (e.g. incorrect API key)
+
+      #Rails.logger.debug("sift_debug: post: request_body = #{request_body.inspect}")
 
       begin
         Excon.post(
@@ -192,5 +208,8 @@ class Sift
         nil
       end
     end
+
   end
+
+
 end
