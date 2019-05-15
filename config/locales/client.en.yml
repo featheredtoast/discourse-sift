@@ -26,7 +26,7 @@ en:
       change_settings: "Change Settings"
       no_sift_info: "No Sift info available"
       no_sift_tokenized: "No Sift tokenized breakdown available"
-      no_sift_info: "No Sift Info available"
+      no_sift_failure_reasons: "No Sift failure reasons available"
 
     review:
       types:

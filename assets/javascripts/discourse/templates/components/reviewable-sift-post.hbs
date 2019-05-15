@@ -14,21 +14,30 @@
             <span class="sift-risk sift-risk-{{topicValue}}">{{topicValue}}</span>
           </span>  
         {{/each-in}}
-        <div>
-          {{#if reviewable.payload.sift.tokenized_solution}}
-            {{#each reviewable.payload.sift.tokenized_solution.slots as |slot|}}
-              <span class="sift-classification-unit sift-risk-{{slot.risk}} {{if slot.join_left 'sift-unit-join-left'}} {{if slot.join_right 'sift-unit-join-right'}}">
-                {{slot.text}}
-              </span>
+        <div class="sift-classification-failure-reason-block">
+          {{#if reviewable.payload.sift.failure_reasons}}
+            {{#each reviewable.payload.sift.failure_reasons as |slot|}}
+                <div class="sift-classification-failure-reason">
+                    <div class="sift-classification-failure-reason-text">
+                        {{slot.text}}
+                    </div>
+                    <div class="sift-classification-failure-reason-normalized">
+                  <span class="sift-classification-unit sift-risk-{{slot.topics.[0]}}">
+                      {{slot.normalized}}
+                  </span>
+
+                    </div>
+                </div>
             {{/each}}
           {{~else~}}
-            <span>{{i18n 'sift.no_sift_tokenized'}}</span>
+            <span>{{i18n 'sift.no_sift_failure_reasons'}}</span>
           {{/if}}
         </div>
       {{~else~}}
         <span>{{i18n 'sift.no_sift_info'}}</span>
       {{/if}}
     </div>
-    {{yield}}
+
+      {{yield}}
   </div>
 </div>

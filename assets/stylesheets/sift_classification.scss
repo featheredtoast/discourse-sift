@@ -89,3 +89,25 @@ $topic_list: 'General', 'Bullying', 'Fighting', 'PII', 'Sexting', 'Vulgar', 'Dru
   border-bottom-left-radius: 0;
   border-left: 4px solid #777;	
 }
+
+.sift-classification-failure-reason {
+  background: #e6f2ff;
+
+  padding: 3px 6px;
+  border: solid 1px grey;
+  border-radius: 9px;
+
+  font-size: 1em;
+  font-weight: bold;
+  color: #999999;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  vertical-align: baseline;
+  //background-color: #999999;
+  display: inline-block;
+  margin-bottom: 7px;
+}
+
+.sift-classification-failure-reason-normalized {
+  font-size: smaller;
+}
