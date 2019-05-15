@@ -8,9 +8,27 @@ class ReviewableSiftPost < Reviewable
   def build_actions(actions, guardian, _args)
     return [] unless pending?
 
-    build_action(actions, :confirm_failed, icon: 'check', key: 'confirm_fails_policy')
+
+    delete = actions.add_bundle("#{id}-disagree", icon: "thumbs-down", label: "reviewables.actions.disagree.title")
+    build_action_nested(actions, :disagree_due_to_false_positive, icon: 'thumbs-down', bundle: delete)
+    build_action_nested(actions, :disagree_due_to_too_strict, icon: 'thumbs-down', bundle: delete)
+    build_action_nested(actions, :disagree_due_to_user_edited, icon: 'thumbs-down', bundle: delete)
+    build_action_nested(actions, :disagree_due_to_other_reasons, icon: 'thumbs-down', bundle: delete)
+
+    # build_action(actions, :confirm_failed, icon: 'check', key: 'confirm_fails_policy')
     build_action(actions, :allow, icon: 'thumbs-up', key: 'confirm_passes_policy')
     build_action(actions, :ignore, icon: 'times', key: 'dismiss')
+  end
+
+  def build_action_nested(actions, id, icon:, bundle: nil, client_action: nil, confirm: false)
+    actions.add(id, bundle: bundle) do |action|
+      prefix = "reviewables.actions.#{id}"
+      action.icon = icon
+      action.label = "#{prefix}.title"
+      action.description = "#{prefix}.description"
+      action.client_action = client_action
+      action.confirm_message = "#{prefix}.confirm" if confirm
+    end
   end
 
   def perform_confirm_failed(performed_by, _args)
@@ -39,8 +57,41 @@ class ReviewableSiftPost < Reviewable
     log_confirmation(performed_by, 'sift_confirmed_passed')
     result = successful_transition :rejected, :disagreed
 
-    report_to_action_queue('agree')
+    report_to_action_queue('agree', nil )
 
+    return result
+  end
+
+  def perform_disagree_due_to_false_positive(performed_by, _args)
+
+    result = perform_confirm_failed(performed_by, _args)
+    # Rails.logger.debug("sift_debug: report_to_action_queue Enter: performed_by='#{performed_by}'")
+    report_to_action_queue('false_positive', nil )
+    return result
+  end
+
+  def perform_disagree_due_to_too_strict(performed_by, _args)
+
+    result = perform_confirm_failed(performed_by, _args)
+    # Rails.logger.debug("sift_debug: report_to_action_queue Enter: performed_by='#{performed_by}'")
+    report_to_action_queue('too_strict', nil )
+    return result
+  end
+
+  def perform_disagree_due_to_user_edited(performed_by, _args)
+
+    result = perform_confirm_failed(performed_by, _args)
+    # Rails.logger.debug("sift_debug: report_to_action_queue Enter: performed_by='#{performed_by}'")
+    report_to_action_queue('user_edited', nil )
+    return result
+    end
+
+  def perform_disagree_due_to_user_edited(performed_by, _args)
+
+    result = perform_confirm_failed(performed_by, _args)
+    # Rails.logger.debug("sift_debug: report_to_action_queue Enter: performed_by='#{performed_by}'")
+    # <%= javascript_tag "alert('hello welcome')" unless result %>
+    report_to_action_queue('user_edited', nil )
     return result
   end
 
@@ -71,7 +122,7 @@ class ReviewableSiftPost < Reviewable
     )
   end
 
-  def report_to_action_queue(reason)
+  def report_to_action_queue(reason, extra_reason_remarks)
     # Only call Sift if the setting is set
     # TODO: should there also be a boolean toggle or is this suffcient?
 
@@ -79,7 +130,7 @@ class ReviewableSiftPost < Reviewable
 
     if !SiteSetting.sift_action_end_point.blank?
       DiscourseSift.with_client do |client|
-        result = client.submit_for_post_action(self, reason)
+        result = client.submit_for_post_action(self, reason, extra_reason_remarks)
       end
     end
   end

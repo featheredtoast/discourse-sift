@@ -114,23 +114,34 @@ class Sift
 
     end
 
-    def submit_for_post_action(reviewable, reason)
+    def submit_for_post_action(reviewable, reason, extra_reason_remarks)
 
-      Rails.logger.debug("sift_debug: submit_for_post_action Enter")
+      Rails.logger.debug('sift_debug: submit_for_post_action Enter')
 
       Rails.logger.debug("sift_debug: submit_for_post_action: self='#{reviewable.inspect}', reason='#{reason}'")
-
       the_post = reviewable.target
 
-
+      # TODO: check if these IDs are correct
       payload = {
         'text' => "#{the_post.raw.strip[0..30999]}",
-        'reason' => reason
+        'reason' => reason,
+        'user_id' => reviewable.target_created_by_id.to_s,
+        'user_display_name' => reviewable.target_created_by_id.to_s,
+        'moderator_display_name' => reviewable.created_by_id.to_s,
+        'category' => "##{reviewable.category_id}",
+        'moderator_id' => reviewable.created_by_id.to_s,
+        'content_id' => reviewable.target_id.to_s,
+        'subcategory' => reviewable.topic_id.to_s
       }
+
+      unless extra_reason_remarks.nil?
+        payload['reason_other_text'] = extra_reason_remarks
+      end
 
       response = post(@post_action_end_point, payload)
 
-    end
+
+      end
 
       private
 
