@@ -142,7 +142,7 @@ class Sift
               'subcategory' => "#{post.topic&.id}"
           }
 
-          if !SiteSetting.sift_language_code.blank?
+          if SiteSetting.sift_language_code.present?
             payload['language'] = SiteSetting.sift_language_code
           else
             payload['language'] = "*"
