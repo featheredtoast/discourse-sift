@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # name: discourse-sift
 # about: supports content classifying of posts to Community Sift
 # version: 0.2.0
@@ -44,7 +46,6 @@ after_initialize do
   # Jobs
   require_dependency File.expand_path('../jobs/classify_post.rb', __FILE__)
   require_dependency File.expand_path('../jobs/report_post.rb', __FILE__)
-
 
   if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_sift_post.rb', __FILE__)
@@ -103,7 +104,6 @@ after_initialize do
   end
 
   register_post_custom_field_type(DiscourseSift::RESPONSE_CUSTOM_FIELD, :json)
-  whitelist_flag_post_custom_field(DiscourseSift::RESPONSE_CUSTOM_FIELD)
 
   if reviewable_api_enabled
     staff_actions = %i[sift_confirmed_failed sift_confirmed_passed sift_ignored]

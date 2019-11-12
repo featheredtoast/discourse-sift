@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module DiscourseSift
 
   RESPONSE_CUSTOM_FIELD ||= "sift".freeze
@@ -175,7 +177,14 @@ module DiscourseSift
     # TODO: Maybe a different message if post sent to mod but still visible?
     # Notify User
     if SiteSetting.sift_notify_user
-      SystemMessage.create(post.user, reason, topic_title: post.topic.title)
+      Jobs.enqueue(
+        :send_system_message,
+        user_id: post.user.id,
+        message_type: reason,
+        message_options: {
+          topic_title: post.topic.title
+        }
+      )
     end
   end
 

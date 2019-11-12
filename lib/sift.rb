@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'excon'
 require 'json'
 
@@ -54,7 +56,7 @@ class Sift
         topic_name = TopicMap[topic_id.to_i]
         next(acc) if topic_name.nil?
 
-        acc << " #{topic_name}: #{risk.to_i}"
+        "#{acc} #{topic_name}: #{risk.to_i}"
       end
     end
   end
@@ -62,8 +64,8 @@ class Sift
   class Client
 
     def initialize()
-        @base_url = Discourse.base_url
-        @api_key =  SiteSetting.sift_api_key
+      @base_url = Discourse.base_url
+        @api_key = SiteSetting.sift_api_key
         @api_url = SiteSetting.sift_api_url
         @end_point = SiteSetting.sift_end_point
         @action_end_point = SiteSetting.sift_action_end_point
@@ -76,6 +78,18 @@ class Sift
 
     def submit_for_classification(to_classify)
       #Rails.logger.error("sift_debug: submit_for_classification Enter")
+      if GlobalSetting.try(:use_sift_fixtures)
+        fixture_dir = File.expand_path(
+          "../fixtures",
+          File.dirname(__FILE__)
+        )
+        json_file = "#{fixture_dir}/sift.json"
+        response = File.read(json_file) if File.exist?(json_file)
+        sift_response = JSON.parse(response)
+        to_classify.custom_fields[DiscourseSift::RESPONSE_CUSTOM_FIELD] = sift_response
+        to_classify.save_custom_fields(true)
+        return validate_classification(sift_response)
+      end
       response = post_classify(to_classify)
 
       #Rails.logger.error("sift_debug: #{response.inspect}")
@@ -181,7 +195,6 @@ class Sift
       #Rails.logger.debug("sift_debug: post_classify: to_classify.raw = #{to_classify.raw}")
 
       request_text = "#{to_classify.raw.strip[0..30999]}"
-
 
       # Remove quoted text so it does not get classified.  NOTE: gsub() is used as there can be multiple
       # quote blocks
