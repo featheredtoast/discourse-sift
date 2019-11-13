@@ -103,6 +103,19 @@ after_initialize do
     end
   end
 
+  # Add sift info to user flag payloads
+
+  if reviewable_api_enabled
+    on(:reviewable_created) do |reviewable|
+      return unless reviewable.type === "ReviewableFlaggedPost"
+      reviewable.payload["sift"] = reviewable.post.custom_fields["sift"]
+      reviewable.save!
+    end
+
+    add_to_serializer(:reviewable_flagged_post, :sift_response) do
+      object.payload[DiscourseSift::RESPONSE_CUSTOM_FIELD]
+    end
+  end
   register_post_custom_field_type(DiscourseSift::RESPONSE_CUSTOM_FIELD, :json)
 
   if reviewable_api_enabled
