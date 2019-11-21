@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
-describe 'Reviewables rake tasks', if: defined?(Reviewable) do
+describe 'Reviewables rake tasks', skip: true, if: defined?(Reviewable) do
   before do
     Rake::Task.clear
     Discourse::Application.load_tasks

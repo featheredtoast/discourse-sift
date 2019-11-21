@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 #
 # Based on https://github.com/discourse/discourse-akismet/blob/master/jobs/check_akismet_post.rb
 #
 module Jobs
-  class ClassifyPost < Jobs::Base
+  class ClassifyPost < ::Jobs::Base
 
     # Send a post to Sift for classification
     def execute(args)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module DiscourseSift
 
   RESPONSE_CUSTOM_FIELD ||= "sift".freeze
@@ -56,14 +58,6 @@ module DiscourseSift
         # Trigger an event that community sift auto moderated a post. This allows moderators to notify chat rooms
         DiscourseEvent.trigger(:sift_auto_moderated)
       else
-        #
-        # TODO: If a user is on the post's page and is following the topic then they see the post appear.  It stays
-        #       in view until they refresh the topic even if it was sent to moderated and/or deleted.  Is there a
-        #       hook that can prevent that (i.e. filter the post before it can show on a page? earlier hook?) or
-        #       is there another signal that can be sent to remove it from view, as PostDestroyer does not seem
-        #       to do that.
-        #
-
         #Rails.logger.error("sift_debug: Moderating Post")
 
         # Use the Discourse Flag Queue?
@@ -175,7 +169,14 @@ module DiscourseSift
     # TODO: Maybe a different message if post sent to mod but still visible?
     # Notify User
     if SiteSetting.sift_notify_user
-      SystemMessage.create(post.user, reason, topic_title: post.topic.title)
+      Jobs.enqueue(
+        :send_system_message,
+        user_id: post.user.id,
+        message_type: reason,
+        message_options: {
+          topic_title: post.topic.title
+        }
+      )
     end
   end
 
