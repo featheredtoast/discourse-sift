@@ -38,10 +38,11 @@ module DiscourseSift
       reporter = Discourse.system_user
       passes_policy_guide = result.response
 
+      store_sift_response(post, result)
+
       if passes_policy_guide
         # Make post as passed policy guide
         DiscourseSift.move_to_state(post, 'pass_policy_guide')
-        store_sift_response(post, result) unless reviewable_api_enabled?
       elsif result.over_any_max_risk
         # Mark Post As Auto Moderated Queue
 
@@ -51,8 +52,6 @@ module DiscourseSift
         if reviewable_api_enabled?
           reviewable = enqueue_sift_reviewable(post, result, reporter)
           reviewable.perform(reporter, :confirm_failed)
-        else
-          store_sift_response(post, result)
         end
 
         # Trigger an event that community sift auto moderated a post. This allows moderators to notify chat rooms
@@ -97,8 +96,6 @@ module DiscourseSift
 
         if reviewable_api_enabled?
           enqueue_sift_reviewable(post, result, reporter)
-        else
-          store_sift_response(post, result)
         end
 
         # Mark Post For Requires Moderation
