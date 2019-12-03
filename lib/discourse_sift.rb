@@ -37,7 +37,10 @@ module DiscourseSift
       result = client.submit_for_classification(post)
       reporter = Discourse.system_user
       passes_policy_guide = result.response
+      use_standard_queue = SiteSetting.sift_use_standard_queue
 
+      # Store classification result for every message
+      # TODO: potentially this could be configurable?
       store_sift_response(post, result)
 
       if passes_policy_guide
@@ -49,7 +52,7 @@ module DiscourseSift
         DiscourseSift.move_to_state(post, 'auto_moderated')
         remove_post_and_notify(post, reporter, 'sift_auto_filtered')
 
-        if reviewable_api_enabled?
+        if !use_standard_queue
           reviewable = enqueue_sift_reviewable(post, result, reporter)
           reviewable.perform(reporter, :confirm_failed)
         end
@@ -65,7 +68,7 @@ module DiscourseSift
         #   moderation.  Have to do this right now, because the
         #   default behaviour of the Sift custom queue is to delete
         #   the post to hide it, and this screws up the default Flagged queue
-        if SiteSetting.sift_use_standard_queue
+        if use_standard_queue
 
           #Rails.logger.debug("sift_debug: Flagging Post  post: #{post.inspect}")
           #Rails.logger.debug("sift_debug:   active flags: #{post.active_flags.inspect}")
@@ -89,13 +92,18 @@ module DiscourseSift
             end
           }
 
-        elsif !SiteSetting.sift_post_stay_visible
-          # Should post be hidden/deleted until moderation?
-          remove_post_and_notify(post, reporter, 'sift_human_moderation')
+        else
+
+          if !SiteSetting.sift_post_stay_visible
+            # TODO: Is this setting independent of Custom or Standard reviewable?
+            # Should post be hidden/deleted until moderation?
+            remove_post_and_notify(post, reporter, 'sift_human_moderation')
+          end
+
+          enqueue_sift_reviewable(post, result, reporter)
         end
 
         if reviewable_api_enabled?
-          enqueue_sift_reviewable(post, result, reporter)
         end
 
         # Mark Post For Requires Moderation
