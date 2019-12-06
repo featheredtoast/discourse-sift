@@ -134,10 +134,11 @@ class Sift
 
     def submit_for_post_action(post, moderator, reason, extra_reason_remarks)
 
-      # Rails.logger.debug('sift_debug: submit_for_post_action Enter')
+      Rails.logger.debug('sift_debug: submit_for_post_action Enter')
 
-      # Rails.logger.debug("sift_debug: submit_for_post_action: self='#{post.inspect}', reason='#{reason}'")
-      # Rails.logger.debug("sift_debug: submit_for_post_action: extra_reason_remarks='#{extra_reason_remarks}'")
+      Rails.logger.debug("sift_debug: submit_for_post_action: self='#{post.inspect}', reason='#{reason}'")
+      Rails.logger.debug("sift_debug: submit_for_post_action: extra_reason_remarks='#{extra_reason_remarks}'")
+
       user_display_name = post.user.name.presence || post.user.username.presence
       moderator_display_name = moderator.name.presence || moderator.username.presence
       payload = {
@@ -159,9 +160,20 @@ class Sift
       end
 
       begin
-        post(@action_end_point, payload)
+        response = post(@action_end_point, payload)
+        if response.nil? || response.status != 200
+          #if there is an error reaching Community Sift, escalate to human moderation
+
+          error_message = if response.nil?
+                            "sift_debug: Got an error from Sift: No response object"
+                          else
+                            "sift_debug: Got an error from Sift: status: #{response.status} response: #{response.inspect}"
+                          end
+          Rails.logger.error(error_message)
+        end
+
       rescue
-        Rails.logger.error("sift_debug: Error in invoking the action endpoint")
+        Rails.logger.error("sift_debug: submit_for_post_action: Error in invoking the action endpoint")
         nil
       end
     end
@@ -260,15 +272,17 @@ class Sift
       #Rails.logger.debug("sift_debug: request_body = #{request_body.inspect}")
 
       begin
-        Excon.post(
+        response = Excon.post(
             request_url,
             body: request_body,
             headers: { 'Content-Type' => 'application/json' },
             user: 'discourse-plugin',
             password: @api_key
         )
+        return response
       rescue
-        nil
+        Rails.logger.error("sift_debug: post: Error in invoking the endpoint")
+        raise
       end
     end
   end

@@ -34,6 +34,13 @@ def trigger_post_classification(post)
   Jobs.enqueue(:classify_post, post_id: post.id)
 end
 
+def trigger_post_report(post_action, action)
+  # Use Job queue
+  Rails.logger.debug("sift_debug: trigger_post_report: enter")
+  Rails.logger.debug("sift_debug: trigger_post_report: action=#{action}, post_action=#{post_action.inspect}")
+  Jobs.enqueue(:report_post, post_action_id: post_action.id, action: action)
+end
+
 after_initialize do
 
   #
@@ -117,6 +124,31 @@ after_initialize do
     end
   end
   register_post_custom_field_type(DiscourseSift::RESPONSE_CUSTOM_FIELD, :json)
+
+  #
+  # Add listeners for reporting
+  #
+  on(:flag_agreed) do |post_action, _params|
+    begin
+      Rails.logger.debug("sift_debug: in on(:flag_agreed): action: #{post_action.inspect}, params: #{_params.inspect}")
+
+      trigger_post_report(post_action, "agree")
+    rescue Exception => e
+      Rails.logger.error("sift_debug: Exception in on(:flag_agreed): #{e.inspect}")
+      raise e
+    end
+  end
+
+  on(:flag_disagreed) do |post_action, _params|
+    begin
+      Rails.logger.debug("sift_debug: in on(:flag_disagreed): action: #{post_action.inspect}, params: #{_params.inspect}")
+
+      trigger_post_report(post_action, "disagree")
+    rescue Exception => e
+      Rails.logger.error("sift_debug: Exception in on(:flag_disagreed): #{e.inspect}")
+      raise e
+    end
+  end
 
   if reviewable_api_enabled
     staff_actions = %i[sift_confirmed_failed sift_confirmed_passed sift_ignored]
