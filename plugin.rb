@@ -75,6 +75,14 @@ after_initialize do
   # Add the flag even if the plugin is disabled.
   add_to_serializer(:site, :reviewable_api_enabled, false) { reviewable_api_enabled }
 
+  class ::ReviewableFlaggedPost
+    alias_method :core_build_action, :build_action
+  end
+
+  add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: 'test', confirm: false|
+    core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
+  end
+
   # Store Sift Data
   on(:post_created) do |post, _params|
     begin
