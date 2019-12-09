@@ -20,6 +20,18 @@ export default {
         });
     },
 
+    disagree_action(post_action_id, action, other_reason){
+        console.log("disagree_id enter...");
+        return ajax("/admin/plugins/sift/mod/disagree_action", {
+            type: "POST",
+            data: {
+                post_action_id: post_action_id,
+                action: action,
+                other_reason: other_reason
+            }
+        });
+    },
+
     disagreeOther(post, reason, otherReason){
         return ajax("/admin/plugins/sift/mod/disagree_other", {
             type: "POST",

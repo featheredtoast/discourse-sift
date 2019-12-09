@@ -36,6 +36,17 @@ module DiscourseSift
       render body: nil
     end
 
+    def disagree_action
+      Rails.logger.debug("sift_debug: disagree_action: enter")
+      post_action_id = params[:post_action_id]
+      action = params[:action]
+      other_reason = params[:other_reason]
+
+      Rails.logger.debug("sift_debug: disagree_action: post_action_id='#{post_action_id}', action='#{action}, other_reason='#{other_reason}'")
+      DiscourseSift.report_post_action(post_action_id, current_user, action, other_reason)
+      render body: nil
+    end
+
     private
 
     def log_confirmation(post, custom_type)

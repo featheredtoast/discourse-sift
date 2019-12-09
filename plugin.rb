@@ -38,7 +38,7 @@ def trigger_post_report(post_action, action)
   # Use Job queue
   Rails.logger.debug("sift_debug: trigger_post_report: enter")
   Rails.logger.debug("sift_debug: trigger_post_report: action=#{action}, post_action=#{post_action.inspect}")
-  Jobs.enqueue(:report_post, post_action_id: post_action.id, action: action)
+  Jobs.enqueue(:report_post_action, post_action_id: post_action.id, action: action)
 end
 
 after_initialize do
@@ -52,7 +52,7 @@ after_initialize do
 
   # Jobs
   require_dependency File.expand_path('../jobs/classify_post.rb', __FILE__)
-  require_dependency File.expand_path('../jobs/report_post.rb', __FILE__)
+  require_dependency File.expand_path('../jobs/report_post_action.rb', __FILE__)
 
   if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_sift_post.rb', __FILE__)
@@ -79,9 +79,25 @@ after_initialize do
     alias_method :core_build_action, :build_action
   end
 
+
+
   add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: 'test', confirm: false|
     core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
   end
+
+
+  # add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: nil, confirm: false|
+  #   Rails.logger.debug("sift_debug: in add_to_classs: enter")
+  #
+  #   case id
+  #   when "disagree"
+  #     Rails.logger.debug("sift_debug: in add_to_classs: mapping disagree")
+  #     core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: 'sift_disagree', confirm: confirm
+  #   else
+  #     Rails.logger.debug("sift_debug: in add_to_classs: mapping else: id=#{id}")
+  #     core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
+  #   end
+  # end
 
   # Store Sift Data
   on(:post_created) do |post, _params|

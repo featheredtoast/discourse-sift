@@ -4,7 +4,7 @@
 # Based on https://github.com/discourse/discourse-akismet/blob/master/jobs/check_akismet_post.rb
 #
 module Jobs
-  class ReportPost < ::Jobs::Base
+  class ReportPostAction < ::Jobs::Base
 
     # Send a post to Sift to report agree or disagree with classification
     def execute(args)
@@ -16,7 +16,7 @@ module Jobs
       return unless SiteSetting.sift_enabled?
 
       action = args[:action]
-      post_action_id = args[:post_action]
+      post_action_id = args[:post_action_id]
 
       Rails.logger.debug("sift_debug: report_post job: post_action_id: #{post_action_id}, action: #{action}")
 
