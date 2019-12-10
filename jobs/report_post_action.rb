@@ -11,8 +11,8 @@ module Jobs
 
       Rails.logger.debug("sift_debug: report_post job: enter")
 
-      raise Discourse::InvalidParameters.new(:post_action_id) unless args[:post_action_id].present?
       raise Discourse::InvalidParameters.new(:action) unless args[:action].present?
+      raise Discourse::InvalidParameters.new(:post_action_id) unless args[:post_action_id].present?
       return unless SiteSetting.sift_enabled?
 
       action = args[:action]
