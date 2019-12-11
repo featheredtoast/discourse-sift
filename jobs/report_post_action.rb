@@ -12,39 +12,25 @@ module Jobs
       Rails.logger.debug("sift_debug: report_post job: enter")
 
       raise Discourse::InvalidParameters.new(:action) unless args[:action].present?
-      raise Discourse::InvalidParameters.new(:post_action_id) unless args[:post_action_id].present?
+      raise Discourse::InvalidParameters.new(:post_id) unless args[:post_id].present?
+      raise Discourse::InvalidParameters.new(:moderator_id) unless args[:moderator_id].present?
       return unless SiteSetting.sift_enabled?
 
       action = args[:action]
-      post_action_id = args[:post_action_id]
+      post_id = args[:post_id]
+      moderator_id = args[:moderator_id]
 
-      Rails.logger.debug("sift_debug: report_post job: post_action_id: #{post_action_id}, action: #{action}")
-
-      post_action = PostAction.where(id: args[:post_action_id]).first
-      Rails.logger.debug("sift_debug: report_post job: post_action: #{post_action.inspect}, action: #{action}")
+      Rails.logger.debug("sift_debug: report_post job: action: #{action}, post_id: #{post_id}, moderator_id: #{moderator_id}")
 
       # Post
-      post = post_action.post
+      post = Post.where(id: post_id).first
       Rails.logger.debug("sift_debug: report_post job: post: #{post.inspect}")
-
       return unless post.present?
 
       # Moderator
-      Rails.logger.debug("sift_debug: report_post job: case agreed: agreed_by_id: #{post_action.agreed_by_id}")
-      Rails.logger.debug("sift_debug: report_post job: case agreed: disagreed_by_id: #{post_action.disagreed_by_id}")
-
-      moderator_id = nil
-      case action
-      when "agree"
-        moderator_id = post_action.agreed_by_id
-
-      when "disagree"
-        moderator_id = post_action.disagreed_by_id
-      end
-
-      Rails.logger.debug("sift_debug: report_post job: after case moderator_id: #{moderator_id}")
       moderator = User.where(id: moderator_id).first
       Rails.logger.debug("sift_debug: report_post job: moderator: #{moderator.inspect}")
+      return unless post.present?
 
       Sift::Client.with_client do |client|
         reason = action
