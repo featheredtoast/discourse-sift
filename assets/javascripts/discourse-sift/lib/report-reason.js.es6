@@ -10,13 +10,12 @@ export function showReportReason(reviewable, callback, opts) {
       title: "sift.report_reason.title",
       addModalBodyView: true
     });
-    // controller.reset();
-    //
-    // controller.setProperties({
-    //   userId: userId,
-    //   callback: callback,
-    //   postId: opts.postId
-    // });
+
+    controller.reset();
+
+    controller.setProperties({
+      callback: callback
+    });
 
     return controller;
   });

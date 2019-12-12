@@ -42,7 +42,7 @@ def trigger_post_report_agree(post_action)
   moderator_id = post_action.agreed_by_id
   post_id = post_action.post_id
 
-  Jobs.enqueue(:report_post_action, post_id: post_id, moderator_id: moderator_id, action: "agree")
+  DiscourseSift.report_post_action("agree", post_id, moderator_id, nil )
 end
 
 after_initialize do

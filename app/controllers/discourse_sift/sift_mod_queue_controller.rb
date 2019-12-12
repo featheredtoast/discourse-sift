@@ -38,12 +38,13 @@ module DiscourseSift
 
     def disagree_action
       Rails.logger.debug("sift_debug: disagree_action: enter")
-      post_action_id = params[:post_action_id]
-      action = params[:action]
-      other_reason = params[:other_reason]
+      reason = params[:reason]
+      post_id = params[:post_id]
+      moderator_id = params[:moderator_id]
+      extra_reason_remarks = params[:extra_reason_remarks]
 
-      Rails.logger.debug("sift_debug: disagree_action: post_action_id='#{post_action_id}', action='#{action}, other_reason='#{other_reason}'")
-      DiscourseSift.report_post_action(post_action_id, current_user, action, other_reason)
+      Rails.logger.debug("sift_debug: disagree_action: reason='#{reason}, post_id='#{post_id}', moderator_id='#{moderator_id}', extra_reason_remarks='#{extra_reason_remarks}'")
+      DiscourseSift.report_post_action(reason, post_id, moderator_id, extra_reason_remarks)
       render body: nil
     end
 

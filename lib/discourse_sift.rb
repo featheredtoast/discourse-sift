@@ -204,13 +204,12 @@ module DiscourseSift
     post.save_custom_fields(true)
   end
 
-  def self.report_post_action(post_action_id, moderator, action, extra_reason_remarks)
+  def self.report_post_action(action, post_id, moderator_id, extra_reason_remarks)
     Rails.logger.debug("sift_debug: report_post: reporting using job")
-    Rails.logger.debug("sift_debug: report_post: post_action_id: #{post_action_id}")
 
     return if SiteSetting.sift_action_end_point.blank? || SiteSetting.sift_api_key.blank?
 
     Rails.logger.debug("sift_debug: report_post: sending to job")
-    Jobs.enqueue(:report_post_action, post_action_id: post_action_id, moderator_id: moderator.id, action: action, extra_reason_remarks: extra_reason_remarks)
+    Jobs.enqueue(:report_post_action, action: action, post_id: post_id, moderator_id: moderator_id, extra_reason_remarks: extra_reason_remarks)
   end
 end

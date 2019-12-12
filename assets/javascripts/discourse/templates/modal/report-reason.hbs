@@ -1,25 +1,26 @@
 {{#d-modal-body class="report-reason-modal"}}
     <div>
-        {{radio-button class="report-reason-choice" name="disgreement_action" value="false_positive" }}
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="false_positive" selection=reported_reason}}
         {{i18n 'sift.report_reason.false_positive.title'}}
     </div>
     <div>
-        {{radio-button class="report-reason-choice" name="disgreement_action" value="too_strict" }}
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="too_strict"  selection=reported_reason}}
         {{i18n 'sift.report_reason.too_strict.title'}}
     </div>
     <div>
-        {{radio-button class="report-reason-choice" name="disgreement_action" value="user_edited" }}
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="user_edited"  selection=reported_reason}}
         {{i18n 'sift.report_reason.user_edited.title'}}
     </div>
     <div>
-        {{radio-button class="report-reason-choice" name="disgreement_action" value="other" }}
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="other"  selection=reported_reason}}
         {{i18n 'sift.report_reason.other.title'}}
-        {{input name="other_reason"}}
+        {{input name="other_reason" value=other_reason}}
     </div>
 
     {{d-button
             label="sift.report_reason.submit_button.title"
             class="btn-primary"
+            action=(action "submitReport")
             disabled=attachDisabled
     }}
 {{/d-modal-body}}
