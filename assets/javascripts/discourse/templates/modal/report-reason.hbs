@@ -1,0 +1,25 @@
+{{#d-modal-body class="report-reason-modal"}}
+    <div>
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="false_positive" }}
+        {{i18n 'sift.report_reason.false_positive.title'}}
+    </div>
+    <div>
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="too_strict" }}
+        {{i18n 'sift.report_reason.too_strict.title'}}
+    </div>
+    <div>
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="user_edited" }}
+        {{i18n 'sift.report_reason.user_edited.title'}}
+    </div>
+    <div>
+        {{radio-button class="report-reason-choice" name="disgreement_action" value="other" }}
+        {{i18n 'sift.report_reason.other.title'}}
+        {{input name="other_reason"}}
+    </div>
+
+    {{d-button
+            label="sift.report_reason.submit_button.title"
+            class="btn-primary"
+            disabled=attachDisabled
+    }}
+{{/d-modal-body}}

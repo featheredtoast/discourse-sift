@@ -83,31 +83,33 @@ after_initialize do
     alias_method :core_build_action, :build_action
   end
 
-  # add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: nil, confirm: false|
-  #   Rails.logger.debug("sift_debug: in add_to_class: enter")
-  #   Rails.logger.debug("sift_debug: in add_to_class: id=#{id}")
-  #   Rails.logger.debug("sift_debug: in add_to_class: id.class=#{id.class}")
-  #   Rails.logger.debug("sift_debug: in add_to_class: id.inspect=#{id.inspect}")
-  #   Rails.logger.debug("sift_debug: in add_to_class: id.encoding=#{id.encoding}")
-  #
-  #   if id == :disagree
-  #     Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
-  #   else
-  #     Rails.logger.debug("sift_debug: in add_to_class: id *not* disagree")
-  #   end
-  #
-  #   case id
-  #
-  #   when :disagree
-  #     Rails.logger.debug("sift_debug: in add_to_class: mapping disagree")
-  #     return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: 'sift_disagree', confirm: confirm
-  #
-  #   else
-  #     Rails.logger.debug("sift_debug: in add_to_class: mapping else: id=#{id}")
-  #     return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
-  #
-  #   end
-  # end
+  add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: nil, confirm: false|
+    Rails.logger.debug("sift_debug: in add_to_class: enter")
+    Rails.logger.debug("sift_debug: in add_to_class: id=#{id}")
+    # Rails.logger.debug("sift_debug: in add_to_class: id.class=#{id.class}")
+    # Rails.logger.debug("sift_debug: in add_to_class: id.inspect=#{id.inspect}")
+    # Rails.logger.debug("sift_debug: in add_to_class: id.encoding=#{id.encoding}")
+
+    action_id = id.to_s
+
+    if action_id == "disagree"
+      Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
+    else
+      Rails.logger.debug("sift_debug: in add_to_class: id *not* disagree")
+    end
+
+    case action_id
+
+    when "disagree"
+      Rails.logger.debug("sift_debug: in add_to_class: mapping disagree")
+      return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: 'sift_disagree', confirm: confirm
+
+    else
+      Rails.logger.debug("sift_debug: in add_to_class: mapping else: id=#{id}")
+      return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
+
+    end
+  end
 
   # Store Sift Data
   on(:post_created) do |post, _params|
