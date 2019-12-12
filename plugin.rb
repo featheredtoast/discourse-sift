@@ -92,10 +92,10 @@ after_initialize do
 
     action_id = id.to_s
 
-    if action_id == "disagree"
+    if action_id.start_with?("disagree")
+      # We want any disagree mod action
       Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
-    else
-      Rails.logger.debug("sift_debug: in add_to_class: id *not* disagree")
+      action_id = "disagree"
     end
 
     case action_id
