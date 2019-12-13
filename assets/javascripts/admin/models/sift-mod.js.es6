@@ -21,7 +21,6 @@ export default {
     },
 
     disagree_action(reason, post_id, moderator_id, extra_reason_remarks){
-        console.log("disagree_id enter...");
         return ajax("/admin/plugins/sift/mod/disagree_action", {
             type: "POST",
             data: {

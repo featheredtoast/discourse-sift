@@ -30,18 +30,14 @@ def trigger_post_classification(post)
   return unless DiscourseSift.should_classify_post?(post)
 
   # Use Job queue
-  #Rails.logger.debug("sift_debug: Using Job method")
   Jobs.enqueue(:classify_post, post_id: post.id)
 end
 
 def trigger_post_report_agree(post_action)
-  # Use Job queue
-  Rails.logger.debug("sift_debug: trigger_post_report: enter")
-  Rails.logger.debug("sift_debug: trigger_post_report: post_action=#{post_action}, post_action=#{post_action.inspect}")
-
   moderator_id = post_action.agreed_by_id
   post_id = post_action.post_id
 
+  # Use Job queue
   DiscourseSift.report_post_action("agree", post_id, moderator_id, nil )
 end
 
@@ -84,28 +80,25 @@ after_initialize do
   end
 
   add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: nil, confirm: false|
-    Rails.logger.debug("sift_debug: in add_to_class: enter")
-    Rails.logger.debug("sift_debug: in add_to_class: id=#{id}")
-    # Rails.logger.debug("sift_debug: in add_to_class: id.class=#{id.class}")
-    # Rails.logger.debug("sift_debug: in add_to_class: id.inspect=#{id.inspect}")
-    # Rails.logger.debug("sift_debug: in add_to_class: id.encoding=#{id.encoding}")
+    # Rails.logger.debug("sift_debug: in add_to_class: enter")
+    # Rails.logger.debug("sift_debug: in add_to_class: id=#{id}")
 
     action_id = id.to_s
 
     if action_id.start_with?("disagree")
       # We want any disagree mod action
-      Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
+      # Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
       action_id = "disagree"
     end
 
     case action_id
 
     when "disagree"
-      Rails.logger.debug("sift_debug: in add_to_class: mapping disagree")
+      # Rails.logger.debug("sift_debug: in add_to_class: mapping disagree")
       return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: 'sift_disagree', confirm: confirm
 
     else
-      Rails.logger.debug("sift_debug: in add_to_class: mapping else: id=#{id}")
+      # Rails.logger.debug("sift_debug: in add_to_class: mapping else: id=#{id}")
       return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
 
     end
@@ -166,7 +159,7 @@ after_initialize do
   #
   on(:flag_agreed) do |post_action, _params|
     begin
-      Rails.logger.debug("sift_debug: in on(:flag_agreed): action: #{post_action.inspect}, params: #{_params.inspect}")
+      # Rails.logger.debug("sift_debug: in on(:flag_agreed): action: #{post_action.inspect}, params: #{_params.inspect}")
 
       trigger_post_report_agree(post_action)
     rescue Exception => e

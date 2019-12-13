@@ -29,7 +29,6 @@ export default Ember.Controller.extend({
         this.callback(this.reported_reason, this.other_reason);
       }
 
-      console.log("after callback");
       this.modal.send("closeModal");
     },
 
