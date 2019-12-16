@@ -34,6 +34,8 @@ def trigger_post_classification(post)
 end
 
 def trigger_post_report_agree(post_action)
+  return unless SiteSetting.sift_reporting_enabled?
+
   moderator_id = post_action.agreed_by_id
   post_id = post_action.post_id
 
