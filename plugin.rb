@@ -87,7 +87,10 @@ after_initialize do
 
     action_id = id.to_s
 
-    if action_id.start_with?("disagree")
+    if !SiteSetting.sift_reporting_enabled?
+      # We don't want to override any actions
+      action_id = "sift_not_override"
+    elsif action_id.start_with?("disagree")
       # We want any disagree mod action
       # Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
       action_id = "disagree"
