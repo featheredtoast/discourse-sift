@@ -94,17 +94,14 @@ module DiscourseSift
 
         else
 
-          if !SiteSetting.sift_post_stay_visible
-            # TODO: Is this setting independent of Custom or Standard reviewable?
-            # Should post be hidden/deleted until moderation?
-            remove_post_and_notify(post, reporter, 'sift_human_moderation')
-          end
-
           enqueue_sift_reviewable(post, result, reporter)
         end
 
-        if reviewable_api_enabled?
+        if !SiteSetting.sift_post_stay_visible
+          # Should post be hidden until moderation?
+          post.hide!(:inappropriate)
         end
+
 
         # Mark Post For Requires Moderation
         DiscourseSift.move_to_state(post, 'requires_moderation')
