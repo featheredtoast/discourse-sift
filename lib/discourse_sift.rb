@@ -74,24 +74,6 @@ module DiscourseSift
           #Rails.logger.debug("sift_debug:   active flags: #{post.active_flags.inspect}")
 
           flag_post_as(post, reporter, result.topic_string)
-
-          # Should we add an extra flags
-          SiteSetting.sift_extra_flag_users.split(",").each { |name|
-            name = name.strip()
-            if !name.blank?
-              begin
-                # send a flag as this user
-                flag_user = User.find_by_username(name)
-                if !flag_user.nil?
-                  flag_post_as(post, flag_user, result.topic_string)
-                else
-                  Rails.logger.error("sift_debug: Could not flag post with flag user:#{name}  Could not find user")
-                end
-              end
-
-            end
-          }
-
         else
 
           enqueue_sift_reviewable(post, result, reporter)
@@ -101,7 +83,6 @@ module DiscourseSift
           # Should post be hidden until moderation?
           post.hide!(:inappropriate)
         end
-
 
         # Mark Post For Requires Moderation
         DiscourseSift.move_to_state(post, 'requires_moderation')
@@ -153,7 +134,9 @@ module DiscourseSift
     message = I18n.t('sift_flag_message') + topic_string
 
     if reviewable_api_enabled?
-      PostActionCreator.create(user, post, :inappropriate, message: message)
+      result = PostActionCreator.create(user, post, :inappropriate, message: message)
+      # Force a reviewable to get reviewed
+      result.reviewable.add_score(user, PostActionTypes.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
     else
       post_action_type = PostActionType.types[:inappropriate]
       PostAction.act(user, post, post_action_type, message: message)
