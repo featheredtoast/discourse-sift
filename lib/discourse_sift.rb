@@ -135,8 +135,10 @@ module DiscourseSift
 
     if reviewable_api_enabled?
       result = PostActionCreator.create(user, post, :inappropriate, message: message)
-      # Force a reviewable to get reviewed
-      result.reviewable.add_score(user, PostActionTypes.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
+      if SiteSetting.sift_force_review
+        # Force a reviewable to get reviewed
+        result.reviewable.add_score(user, PostActionTypes.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
+      end
     else
       post_action_type = PostActionType.types[:inappropriate]
       PostAction.act(user, post, post_action_type, message: message)
