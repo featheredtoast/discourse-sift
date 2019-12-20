@@ -135,12 +135,17 @@ module DiscourseSift
     message = I18n.t('sift_flag_message') + topic_string
 
     if reviewable_api_enabled?
-      result = PostActionCreator.create(user, post, :inappropriate, message: message)
-      # Rails.logger.debug("sift_debug: flag_post_as: result=#{result}")
-      # Rails.logger.debug("sift_debug: flag_post_as: result.inspect=#{result.inspect}")
-      if SiteSetting.sift_force_review
-        # Force a reviewable to get reviewed
-        result.reviewable.add_score(user, PostActionType.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
+
+      ReviewableFlaggedPost.needs_review!(
+        created_by: user,
+        target: post,
+        topic: post&.topic,
+        reviewable_by_moderator: true,
+        payload: { targets_topic: false }
+      ).tap do |reviewable|
+        reviewable.add_score(user, PostActionType.types[:inappropriate], created_at: reviewable.created_at, force_review: SiteSetting.sift_force_review)
+        # Rails.logger.debug("sift_debug: flag_post_as: result=#{reviewable}")
+        # Rails.logger.debug("sift_debug: flag_post_as: result.inspect=#{reviewable.inspect}")
       end
     else
       post_action_type = PostActionType.types[:inappropriate]
