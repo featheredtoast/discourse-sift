@@ -135,18 +135,18 @@ module DiscourseSift
 
     if reviewable_api_enabled?
       result = PostActionCreator.create(user, post, :inappropriate, message: message)
+      # Rails.logger.debug("sift_debug: flag_post_as: result=#{result}")
+      # Rails.logger.debug("sift_debug: flag_post_as: result.inspect=#{result.inspect}")
       if SiteSetting.sift_force_review
         # Force a reviewable to get reviewed
-        result.reviewable.add_score(user, PostActionTypes.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
+        result.reviewable.add_score(user, PostActionType.types[:inappropriate], created_at: result.reviewable.created_at, force_review: true)
       end
     else
       post_action_type = PostActionType.types[:inappropriate]
       PostAction.act(user, post, post_action_type, message: message)
     end
-  rescue PostAction::AlreadyActed
-    nil # Post already flagged for this user
   rescue Exception => e
-    Rails.logger.error("sift_debug: Exception when trying flag as system user: #{e.inspect}")
+    Rails.logger.error("sift_debug: Exception when trying flag post: #{e.inspect}")
   end
 
   def self.remove_post_and_notify(post, reporter, reason)
