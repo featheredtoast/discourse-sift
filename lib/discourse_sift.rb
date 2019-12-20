@@ -3,6 +3,7 @@
 module DiscourseSift
 
   RESPONSE_CUSTOM_FIELD ||= "sift".freeze
+  REQUEST_EXTRA_PARAM_FIELD ||= "extra_parameters".freeze
 
   def self.should_classify_post?(post)
     return false if post.blank? || (!SiteSetting.sift_enabled?)

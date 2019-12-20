@@ -282,6 +282,9 @@ class Sift
 
       request_url = "#{@api_url}#{endpoint}"
 
+      if !SiteSetting.sift_extra_request_parameter.blank?
+        payload[DiscourseSift::REQUEST_EXTRA_PARAM_FIELD] = SiteSetting.sift_extra_request_parameter
+      end
       request_body = payload.to_json
 
       Rails.logger.debug("sift_debug: post: request_url = #{request_url}, request_body = #{request_body.inspect}")
