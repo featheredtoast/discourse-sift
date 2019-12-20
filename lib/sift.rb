@@ -162,6 +162,20 @@ class Sift
         payload['reason_other_text'] = extra_reason_remarks
       end
 
+      #
+      # Add flags to indicate Sift flagged and User flagged posts
+      #
+
+      # Sift flagged if the classification result was false
+      sift_flagged = !post.custom_fields[DiscourseSift::RESPONSE_CUSTOM_FIELD]["response"]
+      # Assume user flagged if post action count is greater than the sift flag
+      action_count = post.post_actions.count()
+      user_flagged = sift_flagged ? action_count > 1 : action_count > 0
+
+      payload['sift_flagged'] = sift_flagged
+      payload['user_flagged'] = user_flagged
+
+
       Rails.logger.debug("sift_debug: submit_for_post_action: payload = #{payload}")
 
       begin
