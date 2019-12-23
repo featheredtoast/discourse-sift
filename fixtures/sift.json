@@ -1,0 +1,131 @@
+{
+  "tokenized_solution": {
+    "text": "no f*ck this f*ck this sh!t I am so sick of you as$hole",
+    "slots": [
+      {
+        "risk": 1,
+        "text": "no",
+        "solution": "no",
+        "is_pre": false,
+        "position": 0,
+        "original": "no"
+      },
+      {
+        "risk": 6,
+        "text": "fuck",
+        "solution": "fuck",
+        "is_pre": false,
+        "position": 1,
+        "original": "f*ck"
+      },
+      {
+        "risk": 1,
+        "text": "this",
+        "solution": "this",
+        "is_pre": false,
+        "position": 2,
+        "original": "this"
+      },
+      {
+        "risk": 6,
+        "text": "fuck",
+        "solution": "fuck",
+        "is_pre": false,
+        "position": 3,
+        "original": "f*ck"
+      },
+      {
+        "risk": 1,
+        "text": "this",
+        "solution": "this",
+        "is_pre": false,
+        "position": 4,
+        "original": "this"
+      },
+      {
+        "risk": 5,
+        "text": "sh!t",
+        "solution": "sh!t",
+        "is_pre": false,
+        "position": 5,
+        "original": "sh!t"
+      },
+      {
+        "risk": 1,
+        "text": "i",
+        "solution": "i am",
+        "is_pre": false,
+        "position": 6,
+        "original": "I",
+        "join_right": true
+      },
+      {
+        "risk": 1,
+        "text": "am",
+        "solution": "i am",
+        "join_left": true,
+        "is_pre": false,
+        "position": 7,
+        "original": "am"
+      },
+      {
+        "risk": 1,
+        "text": "so",
+        "solution": "so",
+        "is_pre": false,
+        "position": 8,
+        "original": "so"
+      },
+      {
+        "risk": 2,
+        "text": "sick",
+        "solution": "sick",
+        "is_pre": false,
+        "position": 9,
+        "original": "sick"
+      },
+      {
+        "risk": 1,
+        "text": "of",
+        "solution": "of",
+        "is_pre": false,
+        "position": 10,
+        "original": "of"
+      },
+      {
+        "risk": 6,
+        "text": "{{you_he_she}}",
+        "solution": "{{you_he_she}} {{strong_bully_word}}",
+        "is_pre": false,
+        "position": 11,
+        "original": "you",
+        "join_right": true
+      },
+      {
+        "risk": 6,
+        "text": "{{strong_bully_word}}",
+        "solution": "{{you_he_she}} {{strong_bully_word}}",
+        "join_left": true,
+        "is_pre": false,
+        "position": 12,
+        "original": "as$hole"
+      }
+    ]
+  },
+  "risk": 6,
+  "topics": { "0": 6, "1": 6, "5": 6, "29": 6 },
+  "hashed": "no #### this #### this sh!t I am so sick of ### #######",
+  "response": false,
+  "escalations": [],
+  "trust": 6,
+  "events": [
+    { "message": "This is bullying.  ", "id": "BULLYING" },
+    {
+      "message": "Trust level changed by trigger",
+      "old_trust_level": 4,
+      "id": "TRUSTCHANGED",
+      "trust_level": 6
+    },
+    { "id": "UNTRUSTED" }
+  ]
+}

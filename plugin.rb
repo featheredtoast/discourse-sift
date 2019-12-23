@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # name: discourse-sift
 # about: supports content classifying of posts to Community Sift
 # version: 0.2.0
@@ -28,8 +30,17 @@ def trigger_post_classification(post)
   return unless DiscourseSift.should_classify_post?(post)
 
   # Use Job queue
-  #Rails.logger.debug("sift_debug: Using Job method")
   Jobs.enqueue(:classify_post, post_id: post.id)
+end
+
+def trigger_post_report_agree(post_action)
+  return unless SiteSetting.sift_reporting_enabled?
+
+  moderator_id = post_action.agreed_by_id
+  post_id = post_action.post_id
+
+  # Use Job queue
+  DiscourseSift.report_post_action("agree", post_id, moderator_id, nil )
 end
 
 after_initialize do
@@ -43,8 +54,7 @@ after_initialize do
 
   # Jobs
   require_dependency File.expand_path('../jobs/classify_post.rb', __FILE__)
-  require_dependency File.expand_path('../jobs/report_post.rb', __FILE__)
-
+  require_dependency File.expand_path('../jobs/report_post_action.rb', __FILE__)
 
   if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_sift_post.rb', __FILE__)
@@ -66,6 +76,38 @@ after_initialize do
 
   # Add the flag even if the plugin is disabled.
   add_to_serializer(:site, :reviewable_api_enabled, false) { reviewable_api_enabled }
+
+  class ::ReviewableFlaggedPost
+    alias_method :core_build_action, :build_action
+  end
+
+  add_to_class(:reviewable_flagged_post, :build_action) do |actions, id, icon:, button_class: nil, bundle: nil, client_action: nil, confirm: false|
+    # Rails.logger.debug("sift_debug: in add_to_class: enter")
+    # Rails.logger.debug("sift_debug: in add_to_class: id=#{id}")
+
+    action_id = id.to_s
+
+    if !SiteSetting.sift_reporting_enabled?
+      # We don't want to override any actions
+      action_id = "sift_not_override"
+    elsif action_id.start_with?("disagree")
+      # We want any disagree mod action
+      # Rails.logger.debug("sift_debug: in add_to_class: id == disagree")
+      action_id = "disagree"
+    end
+
+    case action_id
+
+    when "disagree"
+      # Rails.logger.debug("sift_debug: in add_to_class: mapping disagree")
+      return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: 'sift_disagree', confirm: confirm
+
+    else
+      # Rails.logger.debug("sift_debug: in add_to_class: mapping else: id=#{id}")
+      return core_build_action actions, id, icon: icon, button_class: button_class, bundle: bundle, client_action: client_action, confirm: confirm
+
+    end
+  end
 
   # Store Sift Data
   on(:post_created) do |post, _params|
@@ -102,8 +144,34 @@ after_initialize do
     end
   end
 
+  # Add sift info to user flag payloads
+
+  if reviewable_api_enabled
+    on(:reviewable_created) do |reviewable|
+      return unless reviewable.type === "ReviewableFlaggedPost"
+      reviewable.payload["sift"] = reviewable.post.custom_fields["sift"]
+      reviewable.save!
+    end
+
+    add_to_serializer(:reviewable_flagged_post, :sift_response) do
+      object.payload[DiscourseSift::RESPONSE_CUSTOM_FIELD]
+    end
+  end
   register_post_custom_field_type(DiscourseSift::RESPONSE_CUSTOM_FIELD, :json)
-  whitelist_flag_post_custom_field(DiscourseSift::RESPONSE_CUSTOM_FIELD)
+
+  #
+  # Add listeners for reporting
+  #
+  on(:flag_agreed) do |post_action, _params|
+    begin
+      # Rails.logger.debug("sift_debug: in on(:flag_agreed): action: #{post_action.inspect}, params: #{_params.inspect}")
+
+      trigger_post_report_agree(post_action)
+    rescue Exception => e
+      Rails.logger.error("sift_debug: Exception in on(:flag_agreed): #{e.inspect}")
+      raise e
+    end
+  end
 
   if reviewable_api_enabled
     staff_actions = %i[sift_confirmed_failed sift_confirmed_passed sift_ignored]

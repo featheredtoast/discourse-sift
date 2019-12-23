@@ -20,10 +20,13 @@ class ReviewableSiftPost < Reviewable
       PostDestroyer.new(performed_by, post).destroy
 
       if SiteSetting.sift_notify_user
-        SystemMessage.create(
-          post.user,
-          'sift_has_moderated',
-          topic_title: post.topic.title
+        Jobs.enqueue(
+          :send_system_message,
+          user_id: post.user.id,
+          message_type: 'sift_has_moderated',
+          message_options: {
+            topic_title: post.topic.title
+          }
         )
       end
     end

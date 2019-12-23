@@ -45,11 +45,23 @@ en:
         confirmed_failed: "Moderator Confirmed Fails Policy Guide"
         confirmed_passed: "Moderator Confirmed Passes Policy Guide"
 
+      report_reason:
+        title: "Report Disagreement Reason"
+        false_positive:
+          title: "False Positive"
+        too_strict:
+          title: "Too Strict"
+        user_edited:
+          title: "User Edited"
+        other:
+          title: "Other"
+        submit_button:
+          title: "Submit"
+
       not_enabled: "Community Sift is not enabled right now."
       change_settings: "Change Settings"
       no_sift_info: "No Sift info available"
       no_sift_tokenized: "No Sift tokenized breakdown available"
-      no_sift_info: "No Sift Info available"
 
     review:
       types:
