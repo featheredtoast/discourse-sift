@@ -136,10 +136,12 @@ module DiscourseSift
 
     if reviewable_api_enabled?
 
-      post_action = PostAction.active.flags.where(post: post, user: user)
+      post_action = PostAction.flags.where(post: post, user: user)
       if post_action.blank?
         PostAction.create(user_id: user.id, post_id: post.id, post_action_type_id: PostActionType.types[:inappropriate], staff_took_action: false)
         post.publish_change_to_clients! :acted
+      else
+        post_action.update(disagreed_at: nil, deferred_at: nil, agreed_at: nil, deleted_at: nil)
       end
       ReviewableFlaggedPost.needs_review!(
         created_by: user,
