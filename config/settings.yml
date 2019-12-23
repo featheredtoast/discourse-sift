@@ -11,6 +11,9 @@ plugins:
   sift_end_point:
     default: '/v1/chat'
     shadowed_by_global: true
+  sift_reporting_enabled:
+    default: false
+    shadowed_by_global: true
   sift_action_end_point:
     default: ''
     shadowed_by_global: true
@@ -28,11 +31,14 @@ plugins:
   sift_use_standard_queue:
     default: true
     shadowed_by_global: true
-  sift_extra_flag_users:
-    default: ''
+  sift_force_review:
+    default: true
     shadowed_by_global: true
   sift_error_is_false_response:
     default: false
+    shadowed_by_global: true
+  sift_extra_request_parameter:
+    default: ''
     shadowed_by_global: true
   sift_general_deny_level:
     default: '8'

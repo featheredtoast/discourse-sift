@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 module DiscourseSift
 
   RESPONSE_CUSTOM_FIELD ||= "sift".freeze
+  REQUEST_EXTRA_PARAM_FIELD ||= "extra_parameters".freeze
 
   def self.should_classify_post?(post)
     return false if post.blank? || (!SiteSetting.sift_enabled?)
@@ -35,35 +38,29 @@ module DiscourseSift
       result = client.submit_for_classification(post)
       reporter = Discourse.system_user
       passes_policy_guide = result.response
+      use_standard_queue = SiteSetting.sift_use_standard_queue
+
+      # Store classification result for every message
+      # TODO: potentially this could be configurable?
+      store_sift_response(post, result)
 
       if passes_policy_guide
         # Make post as passed policy guide
         DiscourseSift.move_to_state(post, 'pass_policy_guide')
-        store_sift_response(post, result) unless reviewable_api_enabled?
       elsif result.over_any_max_risk
         # Mark Post As Auto Moderated Queue
 
         DiscourseSift.move_to_state(post, 'auto_moderated')
         remove_post_and_notify(post, reporter, 'sift_auto_filtered')
 
-        if reviewable_api_enabled?
+        if !use_standard_queue
           reviewable = enqueue_sift_reviewable(post, result, reporter)
           reviewable.perform(reporter, :confirm_failed)
-        else
-          store_sift_response(post, result)
         end
 
         # Trigger an event that community sift auto moderated a post. This allows moderators to notify chat rooms
         DiscourseEvent.trigger(:sift_auto_moderated)
       else
-        #
-        # TODO: If a user is on the post's page and is following the topic then they see the post appear.  It stays
-        #       in view until they refresh the topic even if it was sent to moderated and/or deleted.  Is there a
-        #       hook that can prevent that (i.e. filter the post before it can show on a page? earlier hook?) or
-        #       is there another signal that can be sent to remove it from view, as PostDestroyer does not seem
-        #       to do that.
-        #
-
         #Rails.logger.error("sift_debug: Moderating Post")
 
         # Use the Discourse Flag Queue?
@@ -72,39 +69,20 @@ module DiscourseSift
         #   moderation.  Have to do this right now, because the
         #   default behaviour of the Sift custom queue is to delete
         #   the post to hide it, and this screws up the default Flagged queue
-        if SiteSetting.sift_use_standard_queue
+        if use_standard_queue
 
           #Rails.logger.debug("sift_debug: Flagging Post  post: #{post.inspect}")
           #Rails.logger.debug("sift_debug:   active flags: #{post.active_flags.inspect}")
 
           flag_post_as(post, reporter, result.topic_string)
+        else
 
-          # Should we add an extra flags
-          SiteSetting.sift_extra_flag_users.split(",").each { |name|
-            name = name.strip()
-            if !name.blank?
-              begin
-                # send a flag as this user
-                flag_user = User.find_by_username(name)
-                if !flag_user.nil?
-                  flag_post_as(post, flag_user, result.topic_string)
-                else
-                  Rails.logger.error("sift_debug: Could not flag post with flag user:#{name}  Could not find user")
-                end
-              end
-
-            end
-          }
-
-        elsif !SiteSetting.sift_post_stay_visible
-          # Should post be hidden/deleted until moderation?
-          remove_post_and_notify(post, reporter, 'sift_human_moderation')
+          enqueue_sift_reviewable(post, result, reporter)
         end
 
-        if reviewable_api_enabled?
-          enqueue_sift_reviewable(post, result, reporter)
-        else
-          store_sift_response(post, result)
+        if !SiteSetting.sift_post_stay_visible
+          # Should post be hidden until moderation?
+          post.hide!(:inappropriate)
         end
 
         # Mark Post For Requires Moderation
@@ -157,15 +135,31 @@ module DiscourseSift
     message = I18n.t('sift_flag_message') + topic_string
 
     if reviewable_api_enabled?
-      PostActionCreator.create(user, post, :inappropriate, message: message)
+
+      post_action = PostAction.flags.where(post: post, user: user)
+      if post_action.blank?
+        PostAction.create(user_id: user.id, post_id: post.id, post_action_type_id: PostActionType.types[:inappropriate], staff_took_action: false)
+        post.publish_change_to_clients! :acted
+      else
+        post_action.update(disagreed_at: nil, deferred_at: nil, agreed_at: nil, deleted_at: nil)
+      end
+      ReviewableFlaggedPost.needs_review!(
+        created_by: user,
+        target: post,
+        topic: post&.topic,
+        reviewable_by_moderator: true,
+        payload: { targets_topic: false }
+      ).tap do |reviewable|
+        reviewable.add_score(user, PostActionType.types[:inappropriate], created_at: reviewable.created_at, force_review: SiteSetting.sift_force_review)
+        # Rails.logger.debug("sift_debug: flag_post_as: result=#{reviewable}")
+        # Rails.logger.debug("sift_debug: flag_post_as: result.inspect=#{reviewable.inspect}")
+      end
     else
       post_action_type = PostActionType.types[:inappropriate]
       PostAction.act(user, post, post_action_type, message: message)
     end
-  rescue PostAction::AlreadyActed
-    nil # Post already flagged for this user
   rescue Exception => e
-    Rails.logger.error("sift_debug: Exception when trying flag as system user: #{e.inspect}")
+    Rails.logger.error("sift_debug: Exception when trying flag post: #{e.inspect}")
   end
 
   def self.remove_post_and_notify(post, reporter, reason)
@@ -175,7 +169,14 @@ module DiscourseSift
     # TODO: Maybe a different message if post sent to mod but still visible?
     # Notify User
     if SiteSetting.sift_notify_user
-      SystemMessage.create(post.user, reason, topic_title: post.topic.title)
+      Jobs.enqueue(
+        :send_system_message,
+        user_id: post.user.id,
+        message_type: reason,
+        message_options: {
+          topic_title: post.topic.title
+        }
+      )
     end
   end
 
@@ -198,12 +199,11 @@ module DiscourseSift
     post.save_custom_fields(true)
   end
 
-  def self.report_post(post, moderator, reason, extra_reason_remarks)
-    Rails.logger.debug("sift_debug: report_post: reporting using job")
+  def self.report_post_action(action, post_id, moderator_id, extra_reason_remarks)
+    # Rails.logger.debug("sift_debug: report_post: reporting using job")
 
     return if SiteSetting.sift_action_end_point.blank? || SiteSetting.sift_api_key.blank?
 
-    Rails.logger.debug("sift_debug: report_post: sending to job")
-    Jobs.enqueue(:report_post, post_id: post.id, moderator_id: moderator.id, reason: reason, extra_reason_remarks: extra_reason_remarks)
+    Jobs.enqueue(:report_post_action, action: action, post_id: post_id, moderator_id: moderator_id, extra_reason_remarks: extra_reason_remarks)
   end
 end

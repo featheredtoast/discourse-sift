@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'excon'
 require 'json'
 
@@ -54,7 +56,7 @@ class Sift
         topic_name = TopicMap[topic_id.to_i]
         next(acc) if topic_name.nil?
 
-        acc << " #{topic_name}: #{risk.to_i}"
+        "#{acc} #{topic_name}: #{risk.to_i}"
       end
     end
   end
@@ -62,8 +64,8 @@ class Sift
   class Client
 
     def initialize()
-        @base_url = Discourse.base_url
-        @api_key =  SiteSetting.sift_api_key
+      @base_url = Discourse.base_url
+        @api_key = SiteSetting.sift_api_key
         @api_url = SiteSetting.sift_api_url
         @end_point = SiteSetting.sift_end_point
         @action_end_point = SiteSetting.sift_action_end_point
@@ -76,6 +78,18 @@ class Sift
 
     def submit_for_classification(to_classify)
       #Rails.logger.error("sift_debug: submit_for_classification Enter")
+      if GlobalSetting.try(:use_sift_fixtures)
+        fixture_dir = File.expand_path(
+          "../fixtures",
+          File.dirname(__FILE__)
+        )
+        json_file = "#{fixture_dir}/sift.json"
+        response = File.read(json_file) if File.exist?(json_file)
+        sift_response = JSON.parse(response)
+        to_classify.custom_fields[DiscourseSift::RESPONSE_CUSTOM_FIELD] = sift_response
+        to_classify.save_custom_fields(true)
+        return validate_classification(sift_response)
+      end
       response = post_classify(to_classify)
 
       #Rails.logger.error("sift_debug: #{response.inspect}")
@@ -121,9 +135,10 @@ class Sift
     def submit_for_post_action(post, moderator, reason, extra_reason_remarks)
 
       # Rails.logger.debug('sift_debug: submit_for_post_action Enter')
-
+      #
       # Rails.logger.debug("sift_debug: submit_for_post_action: self='#{post.inspect}', reason='#{reason}'")
       # Rails.logger.debug("sift_debug: submit_for_post_action: extra_reason_remarks='#{extra_reason_remarks}'")
+
       user_display_name = post.user.name.presence || post.user.username.presence
       moderator_display_name = moderator.name.presence || moderator.username.presence
       payload = {
@@ -137,17 +152,47 @@ class Sift
           'content_id' => "#{post.id}",
           'subcategory' => "#{post.topic&.id}"
       }
-
-      Rails.logger.debug("sift_debug: payload = #{payload}")
+      if !SiteSetting.sift_language_code.blank?
+        payload['language'] = SiteSetting.sift_language_code
+      else
+        payload['language'] = "*"
+      end
 
       unless extra_reason_remarks.blank?
         payload['reason_other_text'] = extra_reason_remarks
       end
 
+      #
+      # Add flags to indicate Sift flagged and User flagged posts
+      #
+
+      # Sift flagged if the classification result was false
+      sift_flagged = !post.custom_fields[DiscourseSift::RESPONSE_CUSTOM_FIELD]["response"]
+      # Assume user flagged if post action count is greater than the sift flag
+      action_count = post.post_actions.count()
+      user_flagged = sift_flagged ? action_count > 1 : action_count > 0
+
+      payload['sift_flagged'] = sift_flagged
+      payload['user_flagged'] = user_flagged
+
+
+      Rails.logger.debug("sift_debug: submit_for_post_action: payload = #{payload}")
+
       begin
-        post(@action_end_point, payload)
+        response = post(@action_end_point, payload)
+        if response.nil? || response.status != 200
+          #if there is an error reaching Community Sift, escalate to human moderation
+
+          error_message = if response.nil?
+                            "sift_debug: Got an error from Sift: No response object"
+                          else
+                            "sift_debug: Got an error from Sift: status: #{response.status} response: #{response.inspect}"
+                          end
+          Rails.logger.error(error_message)
+        end
+
       rescue
-        Rails.logger.error("sift_debug: Error in invoking the action endpoint")
+        Rails.logger.error("sift_debug: submit_for_post_action: Error in invoking the action endpoint")
         nil
       end
     end
@@ -181,7 +226,6 @@ class Sift
       #Rails.logger.debug("sift_debug: post_classify: to_classify.raw = #{to_classify.raw}")
 
       request_text = "#{to_classify.raw.strip[0..30999]}"
-
 
       # Remove quoted text so it does not get classified.  NOTE: gsub() is used as there can be multiple
       # quote blocks
@@ -238,24 +282,27 @@ class Sift
 
       request_url = "#{@api_url}#{endpoint}"
 
+      if !SiteSetting.sift_extra_request_parameter.blank?
+        payload[DiscourseSift::REQUEST_EXTRA_PARAM_FIELD] = SiteSetting.sift_extra_request_parameter
+      end
       request_body = payload.to_json
 
       Rails.logger.debug("sift_debug: post: request_url = #{request_url}, request_body = #{request_body.inspect}")
 
       # TODO: Need to handle errors (e.g. incorrect API key)
 
-      #Rails.logger.debug("sift_debug: request_body = #{request_body.inspect}")
-
       begin
-        Excon.post(
+        response = Excon.post(
             request_url,
             body: request_body,
             headers: { 'Content-Type' => 'application/json' },
             user: 'discourse-plugin',
             password: @api_key
         )
+        return response
       rescue
-        nil
+        Rails.logger.error("sift_debug: post: Error in invoking the endpoint")
+        raise
       end
     end
   end
