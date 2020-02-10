@@ -12,12 +12,7 @@ module DiscourseSift
     return false if post.topic.private_message?
 
     stripped = post.raw.strip
-
-    # If the entire post is a URI we skip it. This might seem counter intuitive but
-    # Discourse already has settings for max links and images for new users. If they
-    # pass it means the administrator specifically allowed them.
-    uri = URI(stripped) rescue nil
-    return false if uri
+    return false if stripped.empty?
 
     # Otherwise check the post!
     true
